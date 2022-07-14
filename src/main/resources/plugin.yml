@@ -1,0 +1,21 @@
+name: Golf
+version: '${version}'
+main: org.horizons_server.golf.Golf
+api-version: 1.19
+prefix: Golf
+authors: [ CaptainObi ]
+description: Golf!
+
+commands:
+  golfreload:
+    description: Reload the golf plugin
+    permission: golf.reload
+
+permissions:
+  golf.bounce:
+    description: Allow players to bounce golf balls
+    default: true
+
+  golf.reload:
+    description: Allow players to reload the golf plugin
+

@@ -1,0 +1,8 @@
+bounciness: 0.8
+max-bounces: 5
+bounce-sound-enabled: false
+bounce-sound: BLOCK_SLIME_BLOCK_FALL
+bounce-sound-volume: 0
+bounce-sound-pitch: 0
+sand-debuff: 0.2
+non-fairway-debuff: 0.4

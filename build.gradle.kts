@@ -11,12 +11,10 @@ repositories {
     mavenCentral()
     maven { url = uri("https://hub.spigotmc.org/nexus/content/repositories/snapshots/") }
     maven { url = uri("https://maven.enginehub.org/repo") }
-//    maven { url = uri("https://maven.enginehub.org/repo/") }
 }
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("org.spigotmc:spigot-api:1.19-R0.1-SNAPSHOT")
-//    compileOnly("com.sk89q.worldguard:worldguard-bukkit:1.19")
 }
 

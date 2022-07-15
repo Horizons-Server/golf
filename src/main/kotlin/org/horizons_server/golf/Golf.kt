@@ -1,10 +1,12 @@
 package org.horizons_server.golf
 
 import org.bukkit.*
+import org.bukkit.command.defaults.ReloadCommand
 import org.bukkit.entity.EnderPearl
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.entity.ProjectileLaunchEvent
@@ -13,7 +15,6 @@ import org.bukkit.event.player.PlayerTeleportEvent
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.plugin.java.JavaPlugin
 import org.horizons_server.golf.command.GolfCommand
-import org.horizons_server.golf.command.WaterCommand
 import org.horizons_server.golf.objects.BallOrigin
 import org.horizons_server.golf.objects.BallOriginDataType
 import java.time.LocalDateTime
@@ -26,6 +27,7 @@ class Golf : JavaPlugin(), Listener {
     private lateinit var ballOrigin: NamespacedKey
 
     private val allowed: MutableSet<UUID> = HashSet()
+    val enabled = HashSet<UUID>()
 
     private var bounciness = 0.8
     private var maxBounces = 5
@@ -37,8 +39,6 @@ class Golf : JavaPlugin(), Listener {
     private var bounceSoundPitch = 0f
     private val disabledWorlds: HashSet<String> = HashSet()
 
-//    private var worldGuardHelper: WorldGuardHelper? = null
-
     companion object {
         fun getPlugin() = getPlugin(Golf::class.java)
     }
@@ -49,18 +49,8 @@ class Golf : JavaPlugin(), Listener {
         server.pluginManager.registerEvents(this, this)
 
         val golfCommand = GolfCommand(this)
-        getCommand("golfreload")?.setExecutor(golfCommand)
-        getCommand("golfreload")?.tabCompleter = golfCommand
-
-        val waterCommand = WaterCommand()
-        getCommand("water")?.setExecutor(waterCommand)
-        getCommand("water")?.tabCompleter = waterCommand
-
-//        worldGuardHelper = try {
-//            WorldGuardHelper()
-//        } catch (e: NoClassDefFoundError) {
-//            null
-//        }
+        getCommand("golf")?.setExecutor(golfCommand)
+        getCommand("golf")?.tabCompleter = golfCommand
 
         reload()
     }
@@ -87,7 +77,7 @@ class Golf : JavaPlugin(), Listener {
 
     @EventHandler
     fun onTeleport(event: PlayerTeleportEvent) {
-        if (event.cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL) {
+        if (event.cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL && enabled.contains(event.player.uniqueId)) {
             if (allowed.contains(event.player.uniqueId)) {
                 allowed.remove(event.player.uniqueId)
             } else {
@@ -96,55 +86,55 @@ class Golf : JavaPlugin(), Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     fun onPlayerRiptide(event: PlayerRiptideEvent) {
         val p = event.player
 
         logger.log(Level.INFO, "${p.name} has been launched. Reptiding: ${p.isRiptiding}")
 
-        p.persistentDataContainer.set(
-            ballOrigin, BallOriginDataType(), BallOrigin(p.location, LocalDateTime.now())
-        )
+        if (enabled.contains(p.uniqueId)) {
+            p.persistentDataContainer.set(
+                ballOrigin, BallOriginDataType(), BallOrigin(p.location, LocalDateTime.now())
+            )
+        }
     }
 
     @EventHandler
     fun onProjectileLaunch(event: ProjectileLaunchEvent) {
-        logger.log(Level.INFO, "Projectile Launch BOOP")
         if (event.entityType == EntityType.ENDER_PEARL && event.entity.shooter is Player) {
             logger.log(Level.INFO, "Ender Pearl Launch BOOP")
-            // Check if it's a player firing an enderpearl
-            // log out hi
 
             val p = event.entity.shooter as Player
 
             // If they don't have permission of if in a disabled world, ensure the destination teleport behaves normally
-            if (!p.hasPermission("golf.bounce") || disabledWorlds.contains(p.world.name)) {
+            if (!enabled.contains(p.uniqueId) || disabledWorlds.contains(p.world.name)) {
                 // Make this the last teleport
                 allowed.add(p.uniqueId)
                 // Make this the last bounce
                 event.entity.persistentDataContainer.set(bounces, PersistentDataType.INTEGER, maxBounces + 1)
             }
 
+            // if the person has the golf persistent data, and it is within 5 seconds, then we use that that location.
+            // otherwise we use the location of the pearl throw
             val location = if (p.persistentDataContainer.has(ballOrigin, BallOriginDataType())) {
                 val data = p.persistentDataContainer.get(ballOrigin, BallOriginDataType())!!
+                val recent = data.throwTime?.plusSeconds(5L)?.isAfter(LocalDateTime.now())
+                p.persistentDataContainer.remove(ballOrigin)
 
-                if (data.throwTime?.plusSeconds(5L)?.isAfter(LocalDateTime.now()) == true) {
-                    // we know that a player throw it and we can compute a modifier
-                    data.location
-                } else p.location
+                if (recent == true) data.location
+                else p.location
             } else p.location
 
             event.entity.persistentDataContainer.set(ballOrigin, BallOriginDataType(), BallOrigin(location))
 
             val block = location.block
-
             val adj = block.getAdjacent()
 
-            // go down the tree from worsed to best
-            if (adj.find { it.type == Material.SAND } != null) {
+            // go down the tree from worst to best
+            if (adj.any { it.type == Material.SAND }) {
                 event.entity.velocity = event.entity.velocity.multiply(sandDebuff)
-            } else if (adj.find { it.type != Material.GREEN_CONCRETE || it.type != Material.GREEN_CONCRETE_POWDER } != null) {
-                event.entity.velocity = event.entity.velocity.multiply(0.5)
+            } else if (adj.any { it.type != Material.LIME_TERRACOTTA || it.type != Material.GREEN_CONCRETE_POWDER }) {
+                event.entity.velocity = event.entity.velocity.multiply(nonFairwayDebuff)
             }
         }
     }

@@ -7,20 +7,17 @@ authors: [ CaptainObi ]
 description: Golf!
 
 commands:
-  golfreload:
-    description: Reload the golf plugin
-    permission: golf.reload
-  water:
-    description: Place water under your feet
-    permission: golf.water
+  golf:
+    description: The base command for the golf plugin. Do /golf for more info
+    usage: /golf <command>
 
 permissions:
-  golf.bounce:
-    description: Allow players to bounce golf balls
+  golf.play:
+    description: Allow players to start and stop a golf session
     default: true
 
   golf.reload:
-    description: Allow players to reload the golf plugin
+    description: Allow players to reload the golf plugin. Only give to admins.
 
   golf.water:
     description: Allow players to use the water command

@@ -27,49 +27,35 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
                 """.trimIndent()
             )
         } else {
-            when (args[1]) {
-                "reload" -> {
-                    if (sender.hasPermission("golf.reload")) {
-                        base.reload()
-                        sender.sendMessage("Reloaded plugin")
-                    } else {
-                        sender.sendMessage("${ChatColor.RED} You don't have permission to do that")
-                    }
-                }
-                "on" -> {
-                    if (sender.hasPermission("golf.play") && sender !is ConsoleCommandSender) {
+            val (perm, func) = when (args[0]) {
+                "reload" -> "golf.reload" to { base.reload() }
+                "on" -> "golf.play" to {
+                    if (sender !is ConsoleCommandSender) {
                         sender.sendMessage(
                             "${ChatColor.GREEN} You are good to go. Enjoy!" +
                                     "\n If the server restarts, you will need to reenable."
                         )
                         base.enabled.add((sender as Player).uniqueId)
-                    } else {
-                        sender.sendMessage("${ChatColor.RED} You don't have permission to do that.")
                     }
                 }
-                "off" -> {
-                    if (sender.hasPermission("golf.play") && sender !is ConsoleCommandSender) {
+                "off" -> "golf.play" to {
+                    if (sender !is ConsoleCommandSender) {
                         sender.sendMessage("${ChatColor.RED} Golf Disabled. Come back soon!")
                         base.enabled.remove((sender as Player).uniqueId)
-                    } else {
-                        sender.sendMessage("${ChatColor.RED} You don't have permission to do that.")
                     }
                 }
-                "water" -> {
-                    if (sender.hasPermission("golf.water")) {
-                        water(sender)
-                    } else {
-                        sender.sendMessage("${ChatColor.RED} You don't have permission to do that.")
-                    }
-                }
-                else -> {
-                    sender.sendMessage("${ChatColor.RED} Unknown command")
-                }
+                "water" -> "golf.water" to { water(sender) }
+                else -> null
+            } ?: return false
+
+            if (sender.hasPermission(perm)) {
+                func()
+            } else {
+                sender.sendMessage("${ChatColor.RED} You don't have permission to do that!")
             }
         }
 
         return true
-
     }
 
     override fun onTabComplete(

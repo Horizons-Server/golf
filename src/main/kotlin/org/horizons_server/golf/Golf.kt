@@ -108,14 +108,13 @@ class Golf : JavaPlugin(), Listener {
 
             // If they don't have permission of if in a disabled world, ensure the destination teleport behaves normally
             if (!enabled.contains(p.uniqueId) || disabledWorlds.contains(p.world.name)) {
-                // Make this the last teleport
+                // Prevent further teleports and bounces
                 allowed.add(p.uniqueId)
-                // Make this the last bounce
                 event.entity.persistentDataContainer.set(bounces, PersistentDataType.INTEGER, maxBounces + 1)
             }
 
             // if the person has the golf persistent data, and it is within 5 seconds, then we use that that location.
-            // otherwise we use the location of the pearl throw
+            // otherwise we use the location of the pearl throw, we don't want to have midair throws
             val location = if (p.persistentDataContainer.has(ballOrigin, BallOriginDataType())) {
                 val data = p.persistentDataContainer.get(ballOrigin, BallOriginDataType())!!
                 val recent = data.throwTime?.plusSeconds(5L)?.isAfter(LocalDateTime.now())

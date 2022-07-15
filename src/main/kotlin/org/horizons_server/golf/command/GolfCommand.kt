@@ -1,11 +1,12 @@
-package org.horizons_server.golf
+package org.horizons_server.golf.command
 
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
+import org.horizons_server.golf.Golf
 
-class BEPCommand(private val base: Golf) : CommandExecutor, TabCompleter {
+class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         base.reload()
 

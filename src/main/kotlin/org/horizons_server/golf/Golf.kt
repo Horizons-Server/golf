@@ -1,7 +1,6 @@
 package org.horizons_server.golf
 
 import org.bukkit.*
-import org.bukkit.block.BlockFace
 import org.bukkit.entity.EnderPearl
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
@@ -9,9 +8,14 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.entity.ProjectileLaunchEvent
+import org.bukkit.event.player.PlayerRiptideEvent
 import org.bukkit.event.player.PlayerTeleportEvent
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.plugin.java.JavaPlugin
+import org.horizons_server.golf.command.GolfCommand
+import org.horizons_server.golf.command.WaterCommand
+import org.horizons_server.golf.objects.BallOrigin
+import org.horizons_server.golf.objects.BallOriginDataType
 import java.time.LocalDateTime
 import java.util.*
 import java.util.logging.Level
@@ -33,13 +37,30 @@ class Golf : JavaPlugin(), Listener {
     private var bounceSoundPitch = 0f
     private val disabledWorlds: HashSet<String> = HashSet()
 
+//    private var worldGuardHelper: WorldGuardHelper? = null
+
+    companion object {
+        fun getPlugin() = getPlugin(Golf::class.java)
+    }
+
     override fun onEnable() {
         bounces = NamespacedKey(this, "bounces")
         ballOrigin = NamespacedKey(this, "startingBlock")
         server.pluginManager.registerEvents(this, this)
-        val bepCommand = BEPCommand(this)
-        getCommand("golfreload")?.setExecutor(bepCommand)
-        getCommand("golfreload")?.tabCompleter = bepCommand
+
+        val golfCommand = GolfCommand(this)
+        getCommand("golfreload")?.setExecutor(golfCommand)
+        getCommand("golfreload")?.tabCompleter = golfCommand
+
+        val waterCommand = WaterCommand()
+        getCommand("water")?.setExecutor(waterCommand)
+        getCommand("water")?.tabCompleter = waterCommand
+
+//        worldGuardHelper = try {
+//            WorldGuardHelper()
+//        } catch (e: NoClassDefFoundError) {
+//            null
+//        }
 
         reload()
     }
@@ -76,6 +97,17 @@ class Golf : JavaPlugin(), Listener {
     }
 
     @EventHandler
+    fun onPlayerRiptide(event: PlayerRiptideEvent) {
+        val p = event.player
+
+        logger.log(Level.INFO, "${p.name} has been launched. Reptiding: ${p.isRiptiding}")
+
+        p.persistentDataContainer.set(
+            ballOrigin, BallOriginDataType(), BallOrigin(p.location, LocalDateTime.now())
+        )
+    }
+
+    @EventHandler
     fun onProjectileLaunch(event: ProjectileLaunchEvent) {
         logger.log(Level.INFO, "Projectile Launch BOOP")
         if (event.entityType == EntityType.ENDER_PEARL && event.entity.shooter is Player) {
@@ -106,13 +138,7 @@ class Golf : JavaPlugin(), Listener {
 
             val block = location.block
 
-            val adj = listOf(
-                block.getRelative(BlockFace.NORTH),
-                block.getRelative(BlockFace.SOUTH),
-                block.getRelative(BlockFace.EAST),
-                block.getRelative(BlockFace.WEST),
-                block.getRelative(BlockFace.DOWN)
-            )
+            val adj = block.getAdjacent()
 
             // go down the tree from worsed to best
             if (adj.find { it.type == Material.SAND } != null) {
@@ -120,16 +146,6 @@ class Golf : JavaPlugin(), Listener {
             } else if (adj.find { it.type != Material.GREEN_CONCRETE || it.type != Material.GREEN_CONCRETE_POWDER } != null) {
                 event.entity.velocity = event.entity.velocity.multiply(0.5)
             }
-        }
-
-        if (event.entityType == EntityType.PLAYER) {
-            val p = event.entity.shooter as Player
-
-            logger.log(Level.INFO, "${p.name} has been launched. Reptiding: ${p.isRiptiding}")
-
-            p.persistentDataContainer.set(
-                ballOrigin, BallOriginDataType(), BallOrigin(p.location, LocalDateTime.now())
-            )
         }
     }
 

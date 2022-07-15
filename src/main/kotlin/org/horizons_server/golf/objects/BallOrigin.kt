@@ -1,4 +1,4 @@
-package org.horizons_server.golf
+package org.horizons_server.golf.objects
 
 import org.bukkit.Location
 import org.bukkit.persistence.PersistentDataAdapterContext

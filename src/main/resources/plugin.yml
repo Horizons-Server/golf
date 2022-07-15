@@ -10,6 +10,9 @@ commands:
   golfreload:
     description: Reload the golf plugin
     permission: golf.reload
+  water:
+    description: Place water under your feet
+    permission: golf.water
 
 permissions:
   golf.bounce:
@@ -19,3 +22,6 @@ permissions:
   golf.reload:
     description: Allow players to reload the golf plugin
 
+  golf.water:
+    description: Allow players to use the water command
+    default: true

@@ -33,16 +33,18 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
                         base.reload()
                         sender.sendMessage("Reloaded plugin")
                     } else {
-                        sender.sendMessage("You don't have permission to do that")
+                        sender.sendMessage("${ChatColor.RED} You don't have permission to do that")
                     }
                 }
                 "on" -> {
                     if (sender.hasPermission("golf.play") && sender !is ConsoleCommandSender) {
-                        sender.sendMessage("${ChatColor.GREEN} You are good to go. Enjoy!" +
-                                "\n If the server restarts, you will need to reenable.")
+                        sender.sendMessage(
+                            "${ChatColor.GREEN} You are good to go. Enjoy!" +
+                                    "\n If the server restarts, you will need to reenable."
+                        )
                         base.enabled.add((sender as Player).uniqueId)
                     } else {
-                        sender.sendMessage("You don't have permission to do that.")
+                        sender.sendMessage("${ChatColor.RED} You don't have permission to do that.")
                     }
                 }
                 "off" -> {
@@ -50,18 +52,18 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
                         sender.sendMessage("${ChatColor.RED} Golf Disabled. Come back soon!")
                         base.enabled.remove((sender as Player).uniqueId)
                     } else {
-                        sender.sendMessage("You don't have permission to do that.")
+                        sender.sendMessage("${ChatColor.RED} You don't have permission to do that.")
                     }
                 }
                 "water" -> {
                     if (sender.hasPermission("golf.water")) {
                         water(sender)
                     } else {
-                        sender.sendMessage("You don't have permission to do that.")
+                        sender.sendMessage("${ChatColor.RED} You don't have permission to do that.")
                     }
                 }
                 else -> {
-                    sender.sendMessage("Unknown command")
+                    sender.sendMessage("${ChatColor.RED} Unknown command")
                 }
             }
         }

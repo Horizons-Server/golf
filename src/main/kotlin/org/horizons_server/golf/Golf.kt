@@ -1,7 +1,6 @@
 package org.horizons_server.golf
 
 import org.bukkit.*
-import org.bukkit.command.defaults.ReloadCommand
 import org.bukkit.entity.EnderPearl
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
@@ -19,8 +18,6 @@ import org.horizons_server.golf.objects.BallOrigin
 import org.horizons_server.golf.objects.BallOriginDataType
 import java.time.LocalDateTime
 import java.util.*
-import java.util.logging.Level
-
 
 class Golf : JavaPlugin(), Listener {
     private lateinit var bounces: NamespacedKey
@@ -90,8 +87,6 @@ class Golf : JavaPlugin(), Listener {
     fun onPlayerRiptide(event: PlayerRiptideEvent) {
         val p = event.player
 
-        logger.log(Level.INFO, "${p.name} has been launched. Reptiding: ${p.isRiptiding}")
-
         if (enabled.contains(p.uniqueId)) {
             p.persistentDataContainer.set(
                 ballOrigin, BallOriginDataType(), BallOrigin(p.location, LocalDateTime.now())
@@ -102,8 +97,6 @@ class Golf : JavaPlugin(), Listener {
     @EventHandler
     fun onProjectileLaunch(event: ProjectileLaunchEvent) {
         if (event.entityType == EntityType.ENDER_PEARL && event.entity.shooter is Player) {
-            logger.log(Level.INFO, "Ender Pearl Launch BOOP")
-
             val p = event.entity.shooter as Player
 
             // If they don't have permission of if in a disabled world, ensure the destination teleport behaves normally
@@ -114,20 +107,11 @@ class Golf : JavaPlugin(), Listener {
                 return
             }
 
-            // ignore the slow if a bounce has already happened
-            if (event.entity.persistentDataContainer.has(bounces, PersistentDataType.INTEGER)) {
-                return
-            }
-
-            // log the datacontainer
-            logger.log(
-                Level.INFO,
-                "DataContainer: ${event.entity.persistentDataContainer.has(bounces, PersistentDataType.INTEGER)}"
-            )
-
             // if the person has the golf persistent data, and it is within 5 seconds, then we use that that location.
             // otherwise we use the location of the pearl throw, we don't want to have midair throws
-            val location = if (p.persistentDataContainer.has(ballOrigin, BallOriginDataType())) {
+
+
+            val throwLocation = if (p.persistentDataContainer.has(ballOrigin, BallOriginDataType())) {
                 val data = p.persistentDataContainer.get(ballOrigin, BallOriginDataType())!!
                 val recent = data.throwTime?.plusSeconds(5L)?.isAfter(LocalDateTime.now())
                 p.persistentDataContainer.remove(ballOrigin)
@@ -136,19 +120,25 @@ class Golf : JavaPlugin(), Listener {
                 else p.location
             } else p.location
 
-            event.entity.persistentDataContainer.set(ballOrigin, BallOriginDataType(), BallOrigin(location))
+            val location = if (event.entity.persistentDataContainer.has(
+                    bounces, PersistentDataType.INTEGER
+                )
+            ) event.entity.location else throwLocation
+
+            event.entity.persistentDataContainer.set(ballOrigin, BallOriginDataType(), BallOrigin(throwLocation))
 
             val block = location.block
             val adj = block.getAdjacent()
 
-            adj.forEach {
-                logger.log(Level.INFO, "Adj = ${it.type}")
-            }
+            val totalNotAir = adj.count { it.type != Material.AIR }
+            val totalNotSand = adj.count { it.type != Material.SAND }
+            val totalFairway =
+                adj.count { it.type == Material.WATER || it.type == Material.LIME_TERRACOTTA || it.type == Material.GREEN_CONCRETE_POWDER }
 
             // go down the tree from worst to best
-            if (adj.any { it.type == Material.SAND }) {
+            if (totalNotSand.toDouble() < totalNotAir.toDouble() / 2.0) {
                 event.entity.velocity = event.entity.velocity.multiply(sandDebuff)
-            } else if (adj.filter { it.type != Material.WATER && it.type != Material.LIME_TERRACOTTA && it.type != Material.GREEN_CONCRETE_POWDER && it.type != Material.AIR }.size > adj.size / 2) {
+            } else if (totalFairway.toDouble() < totalNotAir.toDouble() / 2.0) {
                 event.entity.velocity = event.entity.velocity.multiply(nonFairwayDebuff)
             }
         }
@@ -156,7 +146,11 @@ class Golf : JavaPlugin(), Listener {
 
     @EventHandler
     fun onProjectileHit(event: ProjectileHitEvent) {
-        if (event.entityType == EntityType.ENDER_PEARL) {
+        if (event.entityType == EntityType.ENDER_PEARL && event.entity.shooter is Player) {
+
+            val p = event.entity.shooter as Player
+
+            if (!enabled.contains(p.uniqueId) || disabledWorlds.contains(p.world.name)) return
 
             val old = event.entity as EnderPearl
 
@@ -202,10 +196,6 @@ class Golf : JavaPlugin(), Listener {
             pearlNew.shooter = old.shooter
             old.remove()
 
-            // Launch the event for other plugins to use
-            val launchEvent = ProjectileLaunchEvent(pearlNew)
-            // TODO double check if this will refire the launch event
-            Bukkit.getPluginManager().callEvent(launchEvent)
             pearlNew.velocity = reflection
             val newData = pearlNew.persistentDataContainer
             newData.set(bounces, PersistentDataType.INTEGER, bounceCount + 1)
@@ -213,6 +203,9 @@ class Golf : JavaPlugin(), Listener {
             if (bounceSoundEnabled) {
                 pearlNew.world.playSound(pearlNew.location, bounceSound, bounceSoundVolume, bounceSoundPitch)
             }
+            // Launch the event for other plugins to use
+            val launchEvent = ProjectileLaunchEvent(pearlNew)
+            Bukkit.getPluginManager().callEvent(launchEvent)
         }
     }
 

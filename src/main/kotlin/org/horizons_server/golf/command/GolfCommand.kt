@@ -28,11 +28,14 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
             )
         } else {
             val (perm, func) = when (args[0]) {
-                "reload" -> "golf.reload" to { base.reload() }
+                "reload" -> "golf.reload" to {
+                    base.reload()
+                    sender.sendMessage("Reloaded")
+                }
                 "on" -> "golf.play" to {
                     if (sender !is ConsoleCommandSender) {
                         sender.sendMessage(
-                            "${ChatColor.GREEN} You are good to go. Enjoy!" +
+                            "${ChatColor.GREEN}You are good to go. Enjoy!" +
                                     "\n If the server restarts, you will need to reenable."
                         )
                         base.enabled.add((sender as Player).uniqueId)
@@ -40,7 +43,7 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
                 }
                 "off" -> "golf.play" to {
                     if (sender !is ConsoleCommandSender) {
-                        sender.sendMessage("${ChatColor.RED} Golf Disabled. Come back soon!")
+                        sender.sendMessage("${ChatColor.RED}Golf Disabled. Come back soon!")
                         base.enabled.remove((sender as Player).uniqueId)
                     }
                 }
@@ -51,7 +54,7 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
             if (sender.hasPermission(perm)) {
                 func()
             } else {
-                sender.sendMessage("${ChatColor.RED} You don't have permission to do that!")
+                sender.sendMessage("${ChatColor.RED}You don't have permission to do that!")
             }
         }
 
@@ -75,7 +78,7 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
 
     private fun water(sender: CommandSender) {
         if (sender is ConsoleCommandSender) {
-            sender.sendMessage("${ChatColor.RED} Only players can use this command!")
+            sender.sendMessage("${ChatColor.RED}Only players can use this command!")
             return
         }
 
@@ -84,19 +87,25 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
         val blockBelow = playerBlock.getRelative(BlockFace.DOWN)
         val oldBlockType: Material = blockBelow.type
 
+        // warn the player if they are not enabled
+        if (!base.enabled.contains(player.uniqueId)) {
+            player.sendMessage("${ChatColor.RED}You are not enabled for golf! Use \"/golf on\" to enable.")
+            return
+        }
+
         if (!allowedBlocks.contains(oldBlockType)) {
-            player.sendMessage("${ChatColor.RED} You can't put water here!")
+            player.sendMessage("${ChatColor.RED}You can't put water here!")
             return
         }
 
         for (block in blockBelow.getAdjacent()) {
-            if (block.type != Material.AIR) continue
+            if (block.type != Material.AIR && block.type != Material.GRASS) continue
             block.type = Material.BLACK_CONCRETE
         }
 //        val grassAbove = playerBlock.getRelative(BlockFace.UP).type == Material.GRASS
 
         blockBelow.type = Material.WATER
-        player.sendMessage("${ChatColor.GREEN} Done! You have 15 seconds to make your shot.")
+        player.sendMessage("${ChatColor.GREEN}Done! You have 15 seconds to make your shot.")
 
         Bukkit.getScheduler().runTaskLater(Golf.getPlugin(), Runnable {
             blockBelow.type = oldBlockType

@@ -111,7 +111,19 @@ class Golf : JavaPlugin(), Listener {
                 // Prevent further teleports and bounces
                 allowed.add(p.uniqueId)
                 event.entity.persistentDataContainer.set(bounces, PersistentDataType.INTEGER, maxBounces + 1)
+                return
             }
+
+            // ignore the slow if a bounce has already happened
+            if (event.entity.persistentDataContainer.has(bounces, PersistentDataType.INTEGER)) {
+                return
+            }
+
+            // log the datacontainer
+            logger.log(
+                Level.INFO,
+                "DataContainer: ${event.entity.persistentDataContainer.has(bounces, PersistentDataType.INTEGER)}"
+            )
 
             // if the person has the golf persistent data, and it is within 5 seconds, then we use that that location.
             // otherwise we use the location of the pearl throw, we don't want to have midair throws
@@ -129,10 +141,14 @@ class Golf : JavaPlugin(), Listener {
             val block = location.block
             val adj = block.getAdjacent()
 
+            adj.forEach {
+                logger.log(Level.INFO, "Adj = ${it.type}")
+            }
+
             // go down the tree from worst to best
             if (adj.any { it.type == Material.SAND }) {
                 event.entity.velocity = event.entity.velocity.multiply(sandDebuff)
-            } else if (adj.any { it.type != Material.LIME_TERRACOTTA || it.type != Material.GREEN_CONCRETE_POWDER }) {
+            } else if (adj.filter { it.type != Material.WATER && it.type != Material.LIME_TERRACOTTA && it.type != Material.GREEN_CONCRETE_POWDER && it.type != Material.AIR }.size > adj.size / 2) {
                 event.entity.velocity = event.entity.velocity.multiply(nonFairwayDebuff)
             }
         }

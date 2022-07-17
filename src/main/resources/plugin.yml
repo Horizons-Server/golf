@@ -1,5 +1,5 @@
 name: Golf
-version: '${version}'
+version: '1.1.0'
 main: org.horizons_server.golf.Golf
 api-version: 1.19
 prefix: Golf

@@ -89,7 +89,7 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
             return
         }
 
-        for (block in playerBlock.getAdjacent()) {
+        for (block in blockBelow.getAdjacent()) {
             if (block.type != Material.AIR) continue
             block.type = Material.BLACK_CONCRETE
         }

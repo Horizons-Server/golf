@@ -4,11 +4,7 @@ import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.Material
 import org.bukkit.block.BlockFace
-import org.bukkit.command.Command
-import org.bukkit.command.CommandExecutor
-import org.bukkit.command.CommandSender
-import org.bukkit.command.ConsoleCommandSender
-import org.bukkit.command.TabCompleter
+import org.bukkit.command.*
 import org.bukkit.entity.Player
 import org.horizons_server.golf.Golf
 import org.horizons_server.golf.getAdjacent
@@ -109,7 +105,7 @@ class GolfCommand(private val base: Golf) : CommandExecutor, TabCompleter {
 
         Bukkit.getScheduler().runTaskLater(Golf.getPlugin(), Runnable {
             blockBelow.type = oldBlockType
-            for (block in playerBlock.getAdjacent()) {
+            for (block in blockBelow.getAdjacent()) {
                 if (block.type == Material.GREEN_CONCRETE) block.type = Material.GREEN_CONCRETE_POWDER
                 if (block.type == Material.BLACK_CONCRETE) block.type = Material.AIR
             }

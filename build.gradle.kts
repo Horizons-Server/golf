@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "org.horizons_server.golf"
-version = "1.1.0"
+version = "1.1.2"
 
 repositories {
     mavenCentral()

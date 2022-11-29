@@ -3,6 +3,7 @@ package org.horizons_server.golf.listener
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.Material
+import org.bukkit.block.BlockFace
 import org.bukkit.entity.EnderPearl
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
@@ -125,8 +126,8 @@ class BounceListener(private val base: Golf) : Listener {
                 p.persistentDataContainer.remove(base.ballOrigin)
 
                 if (recent == true) data.location
-                else p.location
-            } else p.location
+                else p.location.block.getRelative(BlockFace.DOWN).location
+            } else p.location.block.getRelative(BlockFace.DOWN).location
 
             val location = if (event.entity.persistentDataContainer.has(
                     base.bounces, PersistentDataType.INTEGER
